@@ -94,3 +94,16 @@ WsClient.prototype.right = function(val) {
 WsClient.prototype.stop = function() {
   this._send(['stop']);
 };
+
+WsClient.prototype.yawShake = function(val) {
+  this._send(['yawShake', val]);
+};
+
+WsClient.prototype.flipRight = function() {
+  this._send(['flipRight']);
+};
+
+WsClient.prototype.cmd = function (params) {
+  this._send(params);
+};
+

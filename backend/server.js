@@ -28,6 +28,7 @@ wsServer.on('connection', function(conn) {
       console.log('err: '+err+': '+msg);
     }
     var kind = msg.shift();
+    console.log(kind, msg);
     switch (kind) {
       case 'on':
         var event = msg.shift();
@@ -51,29 +52,113 @@ wsServer.on('connection', function(conn) {
       case 'stop':
         drone.stop();
         break;
+      case 'flipRight':
+        console.log('I am running');
+        drone.animate('flipRight',msg[0]);
+        break;
+      case 'yawShake':
+        drone.animate('yawShake',msg[0]);
+        break;
       default:
-        console.log('unknown msg: '+kind);
+        console.log('unknown msg: '+k);
         break;
     }
   });
 });
 
-// Mount starfox on the HTTP server so it can serve resources/listen for
-// events from the client
-starfox.mount(server);
+var HID, devices, gamepad, gamepadMeta, _;
 
-// Handle events for connected players
-starfox.on('connection', function(player) {
+HID = require('node-hid');
+_ = require('underscore');
 
-    // Input event is emitted when the state of the controller changes
-    player.on('input', function(gamepad) {
-        console.log(gamepad);
-    });
+devices = HID.devices();
 
-    // gamepadsChanged is fired when a gamepad is plugged or unplugged
-    player.on('gamepadsChanged', function(gamepads) {
-        console.log(gamepads);
-    });
+gamepadMeta = _.find(devices, function(dev) {
+  return dev.vendorId === 121;
 });
+
+gamepad = new HID.HID(gamepadMeta.path);
+
+var controllerState = [];
+
+gamepad.on('data', function(data) {
+  // Analog controls
+  // [0].forEach(function (i) {
+  //   runInstruction(data[i], i);
+  // });
+
+  [0, 1, 3, 4, 5, 6].forEach(function (i) {
+    if (typeof controllerState[i] !== 'undefined' && controllerState[i] !== data[i]) {
+      // console.log('RUN', controllerState[i], data[i], i);
+      runInstruction(data[i], i);
+    }
+    controllerState[i] = data[i];
+  });
+});
+
+var runInstruction = function (info, i) {
+  switch (i) {
+    case 0: // L analog l-r
+      var rollSpeed = (info-128)/128;
+      console.log('ROLL', rollSpeed);
+      if (rollSpeed === 0) {
+        // drone.stop();
+      } else {
+        drone.right(rollSpeed);
+      }
+      break;
+    case 1: // L analog u-d
+      var pitchSpeed = (info-128)/128;
+      console.log('PITCH', pitchSpeed);
+      if (pitchSpeed === 0) {
+        drone.stop();
+      } else {
+        drone.back(pitchSpeed);
+      }
+      break;
+    case 3: // R analog l-r
+      var clockwiseSpeed = (info-128)/128;
+      console.log('CLOCKWISE', clockwiseSpeed);
+      if (clockwiseSpeed === 0) {
+        drone.stop();
+      } else {
+        drone.clockwise(clockwiseSpeed);
+      }
+      break;
+    case 4: // R analog u-d
+      var up = (info-128)/128;
+      console.log('UP', up);
+      if (up === 0) {
+        drone.stop();
+      } else {
+        drone.up(up);
+      }
+      break;
+    case 5: // D-Pad & Main Buttons
+      switch (info) {
+        case 16:
+          console.log("DISABLE EMERGENCY");
+          drone.disableEmergency();
+          break;
+      }
+      break;
+    case 6: // Start/Select/L 1-3/R 1-3
+      switch (info) {
+        case 16:
+          console.log("LAND");
+          drone.land(function() {
+            send(['land']);
+          });
+          break;
+        case 32:
+          console.log("TAKEOFF");
+          drone.takeoff(function() {
+            send(['takeoff']);
+          });
+          break;
+      }
+      break;
+  }
+};
 
 server.listen(process.env.PORT || 3000);

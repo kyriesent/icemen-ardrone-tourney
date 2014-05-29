@@ -24,7 +24,7 @@ body{
   left: 0;
   z-index: 2;
 }
-button{
+#buttonBox{
   z-index: 3;
   position: absolute;
   bottom: 10px;

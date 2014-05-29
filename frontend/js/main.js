@@ -315,21 +315,17 @@ flightButton.addEventListener('click', function() {
   }
 });
 
-
-
-Starfox = require('starfox')
-var sf = new Starfox(); // parameter is the websocket URL to use, 
-                        // default is ws://+document.domain+8080
-
-// Emits a ready event when socket connects
-sf.on('ready', function() {
-    console.log('It\'s about time you showed up, Fox. You\'re the only hope for our world!');
+var flipRightButton = document.getElementById('flipRight');
+flipRightButton.addEventListener('click', function() {
+  client.cmd(['flipRight', 1000]);
 });
 
-// Optional: listen for controller events on the client too:
-sf.on('input', function(gamepadState) {
-    console.log(gamepadState);
+var yawShakeButton = document.getElementById('yawShake');
+yawShakeButton.addEventListener('click', function() {
+  client.cmd(['yawShake', 1000]);
 });
-sf.on('gamepadsChanged', function(gamepads) {
-    console.log(gamepads);
+
+var attackButton = document.getElementById('attack');
+attackButton.addEventListener('click', function() {
+  client.attack();
 });
