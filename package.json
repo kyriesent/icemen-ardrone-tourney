@@ -1,0 +1,15 @@
+{
+  "name": "icemen-ardrone-tourney",
+  "description": "Ar-drone Tourney Script for the Icemen Team",
+  "version": "0.0.1",
+  "maintainers": [
+    {
+      "name": "David Jsa",
+      "email": "david@seelio.com",
+      "web": "seelio.com"
+    }
+  ],
+  "dependencies": {
+    "ar-drone": "0.3.x"
+  }
+}
