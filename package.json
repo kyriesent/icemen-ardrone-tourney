@@ -11,14 +11,17 @@
   ],
   "main": "app.js",
   "dependencies": {
+    "ar-drone": "0.x.x",
     "dronestream": "git://github.com/felixge/node-dronestream.git#soccer",
-    "send": "^0.3.0",
-    "ws": "^0.4.31",
-    "ar-drone": "^0.3.2"
+    "node-hid": "0.3.x",
+    "send": "0.x.x",
+    "starfox": "0.0.1",
+    "underscore": "1.x.x",
+    "ws": "0.x.x"
   },
   "devDependencies": {
-    "jshint": "^2.5.0",
-    "browserify": "^4.1.3"
+    "jshint": "2.x.x",
+    "browserify": "4.x.x"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

@@ -314,3 +314,22 @@ flightButton.addEventListener('click', function() {
     this.textContent = 'Start';
   }
 });
+
+
+
+Starfox = require('starfox')
+var sf = new Starfox(); // parameter is the websocket URL to use, 
+                        // default is ws://+document.domain+8080
+
+// Emits a ready event when socket connects
+sf.on('ready', function() {
+    console.log('It\'s about time you showed up, Fox. You\'re the only hope for our world!');
+});
+
+// Optional: listen for controller events on the client too:
+sf.on('input', function(gamepadState) {
+    console.log(gamepadState);
+});
+sf.on('gamepadsChanged', function(gamepads) {
+    console.log(gamepads);
+});

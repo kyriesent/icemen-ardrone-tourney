@@ -8,6 +8,8 @@ var frontendBuild = path.join(__dirname, '..', 'frontend', 'build');
 var ws = require('ws');
 var drone = require('ar-drone').createClient();
 
+var starfox = require('starfox')
+
 var server = http.createServer(function(req, res) {
   send(req, req.url, {root: frontendBuild}).pipe(res);
 });
@@ -55,4 +57,23 @@ wsServer.on('connection', function(conn) {
     }
   });
 });
+
+// Mount starfox on the HTTP server so it can serve resources/listen for
+// events from the client
+starfox.mount(server);
+
+// Handle events for connected players
+starfox.on('connection', function(player) {
+
+    // Input event is emitted when the state of the controller changes
+    player.on('input', function(gamepad) {
+        console.log(gamepad);
+    });
+
+    // gamepadsChanged is fired when a gamepad is plugged or unplugged
+    player.on('gamepadsChanged', function(gamepads) {
+        console.log(gamepads);
+    });
+});
+
 server.listen(process.env.PORT || 3000);
