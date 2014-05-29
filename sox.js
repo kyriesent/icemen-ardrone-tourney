@@ -1,6 +1,6 @@
 var spawn = require('child_process').spawn
 
-var cmd = 'sox';
+var cmd = './sox';
 var cmdArgs = [
   '-q',
   '-b','16',

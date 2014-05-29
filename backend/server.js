@@ -83,11 +83,12 @@ var controllerState = [];
 
 gamepad.on('data', function(data) {
   // Analog controls
-  // [0].forEach(function (i) {
-  //   runInstruction(data[i], i);
-  // });
+  [0, 1, 3, 4].forEach(function (i) {
+    runInstruction(data[i], i);
+  });
 
-  [0, 1, 3, 4, 5, 6].forEach(function (i) {
+  // Digital controls
+  [5, 6].forEach(function (i) {
     if (typeof controllerState[i] !== 'undefined' && controllerState[i] !== data[i]) {
       // console.log('RUN', controllerState[i], data[i], i);
       runInstruction(data[i], i);
@@ -97,42 +98,44 @@ gamepad.on('data', function(data) {
 });
 
 var runInstruction = function (info, i) {
+  stopPatrol();
   switch (i) {
     case 0: // L analog l-r
       var rollSpeed = (info-128)/128;
-      console.log('ROLL', rollSpeed);
-      if (rollSpeed === 0) {
-        // drone.stop();
-      } else {
-        drone.right(rollSpeed);
-      }
+      // console.log('ROLL', rollSpeed);
+      // if (rollSpeed === 0) {
+      //   drone.stop();
+      // } else {
+      //   drone.right(rollSpeed);
+      // }
+      drone.right(rollSpeed);
       break;
     case 1: // L analog u-d
       var pitchSpeed = (info-128)/128;
-      console.log('PITCH', pitchSpeed);
-      if (pitchSpeed === 0) {
-        drone.stop();
-      } else {
+      // console.log('PITCH', pitchSpeed);
+      // if (pitchSpeed === 0) {
+      //   // drone.stop();
+      // } else {
         drone.back(pitchSpeed);
-      }
+      // }
       break;
     case 3: // R analog l-r
       var clockwiseSpeed = (info-128)/128;
-      console.log('CLOCKWISE', clockwiseSpeed);
-      if (clockwiseSpeed === 0) {
-        drone.stop();
-      } else {
+      // console.log('CLOCKWISE', clockwiseSpeed);
+      // if (clockwiseSpeed === 0) {
+      //   drone.stop();
+      // } else {
         drone.clockwise(clockwiseSpeed);
-      }
+      // }
       break;
     case 4: // R analog u-d
       var up = (info-128)/128;
-      console.log('UP', up);
-      if (up === 0) {
-        drone.stop();
-      } else {
+      // console.log('UP', up);
+      // if (up === 0) {
+      //   drone.stop();
+      // } else {
         drone.up(up);
-      }
+      // }
       break;
     case 5: // D-Pad & Main Buttons
       switch (info) {
@@ -162,3 +165,85 @@ var runInstruction = function (info, i) {
 };
 
 server.listen(process.env.PORT || 3000);
+
+
+var spawn = require('child_process').spawn
+var soxCmd = './sox';
+var soxCmdArgs = [
+  '-q',
+  '-b','16',
+  '-d','-t','aiff','-',
+  'rate','16000','channels','1',
+  'silence','1','0.1', '-30' + 'd','1','1.0', '-30' + 'd'
+];
+
+var listenForSound = function () {
+  var rec = spawn(soxCmd, soxCmdArgs, 'pipe');
+  var recRunning, recBuffer = []
+  // Process stdout
+
+  rec.stdout.on('readable', function() {
+    console.log('listening...');
+  });
+
+  rec.stdout.setEncoding('binary');
+  rec.stdout.on('data', function(data) {
+    if(! recRunning) {
+      console.log('BARREL ROLL!');
+      drone.animate('flipRight', 1000);
+      recRunning = true;
+    }
+    recBuffer.push(data);
+  });
+
+  // Process stdin
+
+  rec.stderr.setEncoding('utf8');
+  rec.stderr.on('data', function(data) {
+    console.log('error')
+    console.log(data)
+  });
+
+  rec.on('close', function(code) {
+    recRunning = false;
+    if(code) {
+      console.log('error', 'sox exited with code ' + code);
+    }
+    console.log('not listening for 3 seconds...');
+    setTimeout(function () {
+      listenForSound()
+    }, 3000)
+  });
+}
+
+// listenForSound()
+
+var time = 2000;
+var goingLeft = false;
+var patrolTimeout;
+drone.takeoff();
+var patrol = function () {
+  if (!goingLeft) {
+    console.log("LEFT");
+    drone.left(.15);
+    goingLeft = true;
+  } else {
+    console.log("RIGHT");
+    drone.right(.15);
+    goingLeft = false;
+  }
+  patrolTimeout = setTimeout(function(){
+    console.log("Patrolling...");
+    patrol();
+  }, time);
+}
+var stopPatrol = function () {
+  if (patrolTimeout) {
+    console.log("Stopping patrol");
+    clearTimeout(patrolTimeout);
+    patrolTimeout = null;
+  }
+}
+setTimeout(function () {
+  patrol();
+}, 3000)
