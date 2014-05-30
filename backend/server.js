@@ -80,12 +80,15 @@ gamepadMeta = _.find(devices, function(dev) {
 gamepad = new HID.HID(gamepadMeta.path);
 
 var controllerState = [];
+var analogControlsEnabled = false;
 
 gamepad.on('data', function(data) {
   // Analog controls
-  [0, 1, 3, 4].forEach(function (i) {
-    runInstruction(data[i], i);
-  });
+  if (analogControlsEnabled) {
+    [0, 1, 3, 4].forEach(function (i) {
+      runInstruction(data[i], i);
+    });
+  }
 
   // Digital controls
   [5, 6].forEach(function (i) {
@@ -98,7 +101,6 @@ gamepad.on('data', function(data) {
 });
 
 var runInstruction = function (info, i) {
-  stopPatrol();
   switch (i) {
     case 0: // L analog l-r
       var rollSpeed = (info-128)/128;
@@ -138,12 +140,17 @@ var runInstruction = function (info, i) {
       // }
       break;
     case 5: // D-Pad & Main Buttons
-      switch (info) {
-        case 16:
-          console.log("DISABLE EMERGENCY");
-          drone.disableEmergency();
-          break;
+      console.log(info);
+      console.log('emergencybit', (info >> 4) & 1);
+      console.log('patrolbit', (info >> 5) & 1);
+      if ((info >> 4) & 1) {
+        console.log("DISABLE EMERGENCY");
+        drone.disableEmergency();
       }
+      // if ((info >> 5) & 1) {
+      //   console.log("STOP PATROLLING");
+      //   stopPatrol();
+      // }
       break;
     case 6: // Start/Select/L 1-3/R 1-3
       switch (info) {
@@ -155,6 +162,7 @@ var runInstruction = function (info, i) {
           break;
         case 32:
           console.log("TAKEOFF");
+          stopPatrol();
           drone.takeoff(function() {
             send(['takeoff']);
           });
@@ -218,32 +226,51 @@ var listenForSound = function () {
 
 // listenForSound()
 
-var time = 2000;
+var time = 1800;
 var goingLeft = false;
-var patrolTimeout;
+var patrolTimeout, initialTimeout;
 drone.takeoff();
 var patrol = function () {
   if (!goingLeft) {
     console.log("LEFT");
-    drone.left(.15);
+    drone.left(.1);
     goingLeft = true;
   } else {
     console.log("RIGHT");
-    drone.right(.15);
+    drone.right(.1);
     goingLeft = false;
   }
   patrolTimeout = setTimeout(function(){
     console.log("Patrolling...");
+    drone.down(0);
     patrol();
   }, time);
 }
 var stopPatrol = function () {
+  if (initialTimeout) {
+    console.log("Stopping initial timeout");
+    clearTimeout(initialTimeout);
+    initialTimeout = null;
+    analogControlsEnabled = true;
+  }
   if (patrolTimeout) {
     console.log("Stopping patrol");
     clearTimeout(patrolTimeout);
     patrolTimeout = null;
+    analogControlsEnabled = true;
   }
 }
-setTimeout(function () {
-  patrol();
-}, 3000)
+// setTimeout(function () {
+//   patrol();
+// }, 5000);
+
+// Autonomous mode
+initialTimeout = setTimeout(function () {
+  drone.down(.1);
+  drone.front(.08);
+  initialTimeout = setTimeout(function () {
+    drone.front(0);
+    drone.down(0);
+    patrol();
+  }, 3000);
+}, 3500);
